@@ -33,6 +33,12 @@ import java_cup.runtime.*;
 */
 
 %{
+
+   /*
+      String Buffer
+   */
+
+
     /**
         The following two methods create java_cup.runtime.Symbol objects
     **/
@@ -61,7 +67,12 @@ WhiteSpace     = {LineTerminator} | [ \t\f]
 /* A literal integer is is a number beginning with a number between
    one and nine followed by zero or more numbers between zero and nine
    or just a zero.  */
+
 dec_int_lit = 0 | [1-9][0-9]*
+
+
+
+
 
 %%
 /* ------------------------Lexical Rules Section---------------------- */
@@ -76,10 +87,20 @@ dec_int_lit = 0 | [1-9][0-9]*
  ";"      { return symbol(sym.SEMI); }
 }
 
+/* identifiers */
 
-{dec_int_lit} { return symbol(sym.NUMBER, new Integer(yytext())); }
+
+//{dec_int_lit} { return symbol(sym.NUMBER, new Integer(yytext())); }
 
 {WhiteSpace} { /* just skip what was found, do nothing */ }
+
+
+
+
+
+
+
+
 
 /* No token was found for the input so through an error.  Print out an
    Illegal character message with the illegal character that was found. */
