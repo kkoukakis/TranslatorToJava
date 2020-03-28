@@ -1,4 +1,7 @@
+/* TranslatorToJava LEXER w */
+
 import java_cup.runtime.*;
+
 
 %%
 /* ----------------- Options and Declarations Section----------------- */
@@ -34,11 +37,8 @@ import java_cup.runtime.*;
 
 %{
 
-   /*
-      String Buffer
-   */
-
-
+   /* String Buffer */
+   StringBuffer stringBuffer = new StringBugger(); //https://jflex.de/manual.html#ExampleUserCode
     /**
         The following two methods create java_cup.runtime.Symbol objects
     **/
@@ -57,49 +57,61 @@ import java_cup.runtime.*;
   in the Lexical Rules Section.
 */
 
-/* A line terminator is a \r (carriage return), \n (line feed), or
-   \r\n. */
+/* A line terminator is a \r (carriage return), \n (line feed), or \r\n. */
 LineTerminator = \r|\n|\r\n
 
 /* White space is a line terminator, space, tab, or line feed. */
 WhiteSpace     = {LineTerminator} | [ \t\f]
 
-/* A literal integer is is a number beginning with a number between
-   one and nine followed by zero or more numbers between zero and nine
-   or just a zero.  */
 
-dec_int_lit = 0 | [1-9][0-9]*
+/* Identifiers must start with (_ or a-zA-Z)  */
+Identifier = [_a-zA-Z][_a-zA-Z0-9]*
 
 
+rpar_lbr= (")"{WhiteSpace}*"{") //question @42 piazza
 
-
+%state STRING
 
 %%
 /* ------------------------Lexical Rules Section---------------------- */
 
 <YYINITIAL> {
 /* operators */
- "+"      { return symbol(sym.PLUS); }
- "-"      { return symbol(sym.MINUS); }
- "*"      { return symbol(sym.TIMES); }
- "("      { return symbol(sym.LPAREN); }
- ")"      { return symbol(sym.RPAREN); }
- ";"      { return symbol(sym.SEMI); }
-}
+ "+"       { return symbol(sym.CONCAT);  }
+ "("       { return symbol(sym.LPAREN);  }
+ ")"       { return symbol(sym.RPAREN);  }
+ //"{"       { return symbol(sym.LBRACE);  }
+ "}"       { return symbol(sym.RBRACE);  }
+{rpar_lbr} { return symbol(sym.RPAR_LBR);} 
+ ","       { return symbol(sym.COMMA);   }
+
+//stringliterals
+\"      {stringBuffer.setLength(0); yybegin(STRING);}
+
+"if"      {return symbol(sym.IF);     }
+"else"    {return symbol(sym.ELSE);   }  
+"reverse" {return symbol(sym.REVERSE);}
+"prefix"  {return symbol(sym.PREFIX); }
+
 
 /* identifiers */
+{Identifier} {return symbol(sym.IDENTIFIER, yytext());}
 
-
-//{dec_int_lit} { return symbol(sym.NUMBER, new Integer(yytext())); }
-
+/* whitespaces tabs etc. */
 {WhiteSpace} { /* just skip what was found, do nothing */ }
 
+}
 
 
-
-
-
-
+<STRING> {
+\"               {yybegin(YYINITIAL); return symbol(sym.STRING_LITERAL, stringBuffer.toString());}
+[^\n\r\"\\]+     { stringBuffer.append(yytext());}             
+\\t              { stringBuffer.append("\\t");}     
+\\n              { stringBuffer.append("\\n");}     
+\\r              { stringBuffer.append("\\r");}     
+\\\"             { stringBuffer.append("\\\"");}      
+\\               { stringBuffer.append("\\");}    
+}
 
 
 /* No token was found for the input so through an error.  Print out an

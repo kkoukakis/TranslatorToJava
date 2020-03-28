@@ -3,6 +3,8 @@
  *  Package and Import Specifications
  */
 import java_cup.runtime.*;
+import java.io.*;
+import java.util.*;
 
 /**
  *  Usercode Components
@@ -21,31 +23,22 @@ scan with {: return s.next_token(); :};
  */
 
 /* Terminals (tokens returned by the scanner). */
-terminal            SEMI, PLUS, MINUS, TIMES, UMINUS, LPAREN, RPAREN;
-terminal Integer    NUMBER;        // our scanner provides numbers as integers
+terminal            CONCAT, LPAREN, RPAREN, RBRACE, COMMA, IF, ELSE, REVERSE, PREFIX;
+terminal String     IDENTIFIER, STRING;        
 
 /*  Non terminals */
-non terminal            expr_list;
-non terminal Integer    expr;      // used to store evaluated subexpressions
+non terminal          
+non terminal String   
 
 /**
  *  Precedence Declarations
  */
-precedence left PLUS, MINUS;
-precedence left TIMES;
-precedence left UMINUS;
+precedence left PREFIX, REVERSE;
+precedence left IF, ELSE;
+precedence left CONCAT;
 
 /**
  *  The Grammar Rules
  */
-expr_list ::= expr_list expr:e SEMI         {: System.out.println(e);:}
-            | expr:e SEMI                   {: System.out.println(e);:}
-;
-expr      ::= expr:e1 PLUS  expr:e2         {: RESULT = e1+e2;       :}
-             | expr:e1 MINUS expr:e2        {: RESULT = e1-e2;       :}
-             | expr:e1 TIMES expr:e2        {: RESULT = e1*e2;       :}
-             | MINUS expr:e                 {: RESULT = -e;          :}
-  	         %prec UMINUS
-             | LPAREN expr:e RPAREN	        {: RESULT = e;           :}
-             | NUMBER:n	                    {: RESULT = n;           :}
-             ;
+
+
