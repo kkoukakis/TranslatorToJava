@@ -1,4 +1,4 @@
-/* Simple +/-/* expression language; parser evaluates constant expressions on the fly*/
+/* .cup file for TranslatorToJava Project */
 /**
  *  Package and Import Specifications
  */
@@ -16,6 +16,8 @@ parser code {:
 :}
 
 /* define how to connect to the scanner! */
+//init with {: s.init(); :};
+
 scan with {: return s.next_token(); :};
 
 /**
@@ -23,22 +25,26 @@ scan with {: return s.next_token(); :};
  */
 
 /* Terminals (tokens returned by the scanner). */
-terminal            CONCAT, LPAREN, RPAREN, RBRACE, COMMA, IF, ELSE, REVERSE, PREFIX;
-terminal String     IDENTIFIER, STRING;        
+terminal            COMMA, LPAREN, RPAREN, BEGIN, END, LPAREN_END;
+terminal            CONCAT, REVERSE, PREFIX;
+terminal            IF, ELSE;
+terminal String     IDENTIFIER, STRING_LITERAL;        
 
 /*  Non terminals */
-non terminal          
-non terminal String   
+non terminal          program, exp;
+//non terminal String   expr_concat;
 
 /**
  *  Precedence Declarations
  */
 precedence left PREFIX, REVERSE;
-precedence left IF, ELSE;
 precedence left CONCAT;
+//precedence left IF, ELSE;
 
 /**
  *  The Grammar Rules
  */
+start with program;
 
-
+program ::= exp {: System.out.println("TEST"); :}
+        ;

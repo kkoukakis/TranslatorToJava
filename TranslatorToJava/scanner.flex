@@ -38,7 +38,7 @@ import java_cup.runtime.*;
 %{
 
    /* String Buffer */
-   StringBuffer stringBuffer = new StringBugger(); //https://jflex.de/manual.html#ExampleUserCode
+   StringBuffer stringBuffer = new StringBuffer(); //https://jflex.de/manual.html#ExampleUserCode and example2
     /**
         The following two methods create java_cup.runtime.Symbol objects
     **/
@@ -67,8 +67,12 @@ WhiteSpace     = {LineTerminator} | [ \t\f]
 /* Identifiers must start with (_ or a-zA-Z)  */
 Identifier = [_a-zA-Z][_a-zA-Z0-9]*
 
+if      = if     
+else    = else   
+reverse = reverse
+prefix  = prefix 
 
-rpar_lbr= (")"{WhiteSpace}*"{") //question @42 piazza
+//rparen_begin= (")"{WhiteSpace}*"{") //question @42 piazza ?
 
 %state STRING
 
@@ -80,28 +84,26 @@ rpar_lbr= (")"{WhiteSpace}*"{") //question @42 piazza
  "+"       { return symbol(sym.CONCAT);  }
  "("       { return symbol(sym.LPAREN);  }
  ")"       { return symbol(sym.RPAREN);  }
- //"{"       { return symbol(sym.LBRACE);  }
- "}"       { return symbol(sym.RBRACE);  }
-{rpar_lbr} { return symbol(sym.RPAR_LBR);} 
+ "{"       { return symbol(sym.BEGIN);  }
+ "}"       { return symbol(sym.END);  }
+//{rparen_begin} { return symbol(sym.RPAR_BEGIN);} 
  ","       { return symbol(sym.COMMA);   }
-
+//functions
+{reverse} {return symbol(sym.REVERSE);}
+{prefix}  {return symbol(sym.PREFIX); }
 //stringliterals
 \"      {stringBuffer.setLength(0); yybegin(STRING);}
+}
 
-"if"      {return symbol(sym.IF);     }
-"else"    {return symbol(sym.ELSE);   }  
-"reverse" {return symbol(sym.REVERSE);}
-"prefix"  {return symbol(sym.PREFIX); }
-
+//if ... else
+{if}      {return symbol(sym.IF);     }
+{else}    {return symbol(sym.ELSE);   }  
 
 /* identifiers */
 {Identifier} {return symbol(sym.IDENTIFIER, yytext());}
 
 /* whitespaces tabs etc. */
 {WhiteSpace} { /* just skip what was found, do nothing */ }
-
-}
-
 
 <STRING> {
 \"               {yybegin(YYINITIAL); return symbol(sym.STRING_LITERAL, stringBuffer.toString());}
