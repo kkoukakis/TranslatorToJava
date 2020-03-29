@@ -24,7 +24,7 @@ import java_cup.runtime.*;
    generated parser.
 */
 %cup
-%unicode
+//%unicode
 
 /*
   Declarations
@@ -38,7 +38,7 @@ import java_cup.runtime.*;
 %{
 
    /* String Buffer */
-   StringBuffer stringBuffer = new StringBuffer(); //https://jflex.de/manual.html#ExampleUserCode and example2
+   StringBuffer stringBuffer = new StringBuffer(); //https://jflex.de/manual.html#ExampleUserCode && examples/2nd-example
     /**
         The following two methods create java_cup.runtime.Symbol objects
     **/
@@ -72,7 +72,7 @@ else    = else
 reverse = reverse
 prefix  = prefix 
 
-//rparen_begin= (")"{WhiteSpace}*"{") //question @42 piazza ?
+rparen_begin= (")"{WhiteSpace}*"{") //question @42 piazza ?
 
 %state STRING
 
@@ -81,29 +81,31 @@ prefix  = prefix
 
 <YYINITIAL> {
 /* operators */
- "+"       { return symbol(sym.CONCAT);  }
- "("       { return symbol(sym.LPAREN);  }
- ")"       { return symbol(sym.RPAREN);  }
- "{"       { return symbol(sym.BEGIN);  }
- "}"       { return symbol(sym.END);  }
-//{rparen_begin} { return symbol(sym.RPAR_BEGIN);} 
- ","       { return symbol(sym.COMMA);   }
+ "+"              { return symbol(sym.CONCAT);  }
+ "("              { return symbol(sym.LPAREN);  }
+ ")"              { return symbol(sym.RPAREN);  }
+ "{"              { return symbol(sym.BEGIN);  }
+ "}"              { return symbol(sym.END);  }
+{rparen_begin}    { return symbol(sym.RPAREN_BEGIN);} 
+ ","              { return symbol(sym.COMMA); }
 //functions
-{reverse} {return symbol(sym.REVERSE);}
-{prefix}  {return symbol(sym.PREFIX); }
+{reverse}         {return symbol(sym.REVERSE);}
+{prefix}          {return symbol(sym.PREFIX); }
 //stringliterals
 \"      {stringBuffer.setLength(0); yybegin(STRING);}
-}
+
 
 //if ... else
 {if}      {return symbol(sym.IF);     }
-{else}    {return symbol(sym.ELSE);   }  
+{else}    {return symbol(sym.ELSE);   }
 
 /* identifiers */
 {Identifier} {return symbol(sym.IDENTIFIER, yytext());}
 
 /* whitespaces tabs etc. */
 {WhiteSpace} { /* just skip what was found, do nothing */ }
+
+}
 
 <STRING> {
 \"               {yybegin(YYINITIAL); return symbol(sym.STRING_LITERAL, stringBuffer.toString());}

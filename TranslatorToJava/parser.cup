@@ -3,7 +3,6 @@
  *  Package and Import Specifications
  */
 import java_cup.runtime.*;
-import java.io.*;
 import java.util.*;
 
 /**
@@ -16,8 +15,6 @@ parser code {:
 :}
 
 /* define how to connect to the scanner! */
-//init with {: s.init(); :};
-
 scan with {: return s.next_token(); :};
 
 /**
@@ -25,26 +22,89 @@ scan with {: return s.next_token(); :};
  */
 
 /* Terminals (tokens returned by the scanner). */
-terminal            COMMA, LPAREN, RPAREN, BEGIN, END, LPAREN_END;
+terminal            COMMA, LPAREN, RPAREN, BEGIN, END , RPAREN_BEGIN;
 terminal            CONCAT, REVERSE, PREFIX;
 terminal            IF, ELSE;
-terminal String     IDENTIFIER, STRING_LITERAL;        
+terminal            IDENTIFIER, STRING_LITERAL;        
 
 /*  Non terminals */
-non terminal          program, exp;
-//non terminal String   expr_concat;
+non terminal program;
+non terminal epsilon; // Helpers 
+non terminal fdef, fdeflist, fdefargs;                       //function definition ,function definition list , function definition arguments
+non terminal expr, exprlist, exprconcat;                     // expression , expression list, and expression then concat
+non terminal fcall, fcallargs, fcallconcat, fcallargsconcat; //function calls and function call arguments
+non terminal cond , condconcat;                              //condition and condition then concat
 
 /**
  *  Precedence Declarations
  */
 precedence left PREFIX, REVERSE;
+precedence left IF, ELSE;
 precedence left CONCAT;
-//precedence left IF, ELSE;
 
 /**
  *  The Grammar Rules
  */
-start with program;
+//start with program;
 
-program ::= exp {: System.out.println("TEST"); :}
-        ;
+program     ::= fdeflist:fdl exprlist:el                          {: System.out.println("import java.util.*;\n\npublic class Main {public static void main(String[] args) {\n " + el + " \n}\n" + fdl + "}"); :}
+;
+
+fdeflist    ::= fdeflist:fdl fdef:fd                              {: RESULT = fdl + "\n" + fd; :}
+                |   fdef:fd                                       {: RESULT = "\n" + fd; :}
+;
+
+
+fdef      ::= IDENTIFIER:id LPAREN IDENTIFIER:id2 fdefargs:fda RPAREN_BEGIN exprconcat:ep END   {: if(fda!=null){RESULT = "\tpublic static String "+id+"(String "+id2 + fda+") {\n\t\treturn "+ep+";\n\t}";} :}
+            |   IDENTIFIER:id LPAREN RPAREN_BEGIN exprconcat:ep END                             {: RESULT = "\tpublic static String "+id+"() {\n\t\treturn "+ep+";\n\t}"; :}
+;
+
+fdefargs         ::=  epsilon                              {: RESULT = ""; :}        
+                 | COMMA IDENTIFIER:id fdefargs:fda        {: RESULT = ", String " + id + fda; :}     
+;
+
+exprlist       ::= expr:e exprlist:el                                    {: RESULT = "\t\tSystem.out.println(" + e + ");\n" + el; :}
+                |   expr:e                                               {: RESULT = "\t\tSystem.out.println(" + e + ");"; :}
+;
+
+expr          ::= IF LPAREN cond:c RPAREN expr:e1 ELSE expr:e2           {: RESULT = "(("+c+")?"+e1+":"+e2+")";:}
+                |   expr:e1 CONCAT expr:e2                               {: RESULT = e1 + " + " + e2; :}
+                |   REVERSE expr:e1                                      {: RESULT = e1 +".reverse()"; :}
+                |   STRING_LITERAL:sl                                    {: RESULT = "\"" + sl + "\""; :}
+                |   fcall:fc                                             {: RESULT = fc; :}
+;
+
+//manage arguments like in function definition
+fcall         ::= IDENTIFIER:id LPAREN expr:e fcallargs:fca RPAREN       {: RESULT = id + "(" + e + fca + ")"; :}
+                |   IDENTIFIER:id LPAREN RPAREN                          {: RESULT = id + "()"; :}
+;
+
+fcallargs     ::= COMMA expr:e fcallargs:fca                             {: RESULT = ", " + e + fca; :}
+                |  epsilon                                                      {: RESULT = ""; :}
+;
+
+cond            ::= expr:e1 PREFIX expr:e2                               {: RESULT = "("+e2+").startsWith("+e1+")"; :}
+                 
+;
+
+exprconcat       ::= IF LPAREN condconcat:c RPAREN exprconcat:e1 ELSE exprconcat:e2  {: RESULT = "(("+c+")?"+e1+":"+e2+")"; :}
+                |   exprconcat:e1 CONCAT exprconcat:e2                               {: RESULT = e1 + " + " + e2; :}
+                |   STRING_LITERAL:sl                                                {: RESULT = "\"" + sl + "\""; :}
+                |   IDENTIFIER:id                                                    {: RESULT = id; :}
+                |   fcallconcat:fc                                                   {: RESULT = fc; :}
+;
+
+fcallconcat   ::= IDENTIFIER:id LPAREN exprconcat:e fcallargsconcat:fca RPAREN        {: RESULT = id + "(" + e + fca + ")"; :} 
+                |   IDENTIFIER:id LPAREN RPAREN                                       {: RESULT = id + "()"; :}
+;
+
+fcallargsconcat    ::= COMMA exprconcat:e fcallargsconcat:fca             {: RESULT = "," + e + fca; :}
+                    | epsilon                                             {: RESULT = ""; :}
+;
+
+condconcat       ::= exprconcat:e1 PREFIX exprconcat:e2                   {: RESULT = "("+e2+").startsWith("+e1+")"; :}
+                 
+;
+
+epsilon ::=  //epsilon                                {: RESULT = ""; :}
+;
