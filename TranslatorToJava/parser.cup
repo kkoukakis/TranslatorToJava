@@ -15,6 +15,7 @@ parser code {:
 :}
 
 /* define how to connect to the scanner! */
+
 scan with {: return s.next_token(); :};
 
 /**
@@ -22,23 +23,36 @@ scan with {: return s.next_token(); :};
  */
 
 /* Terminals (tokens returned by the scanner). */
-terminal            COMMA, LPAREN, RPAREN, BEGIN, END /*, RPAREN_BEGIN*/;//hack
-terminal            CONCAT, REVERSE, PREFIX;
+terminal            COMMA, LPAREN, RPAREN, /*BEGIN,*/ END; // starting bracket was replaced with hack
+terminal            RPAREN_BEGIN;          /*hacks some didnt work out :P */
+terminal            CONCAT, REVERSE, PREFIX;            //operators
 terminal            IF, ELSE;
-terminal String     IDENTIFIER, STRING_LITERAL;        
+terminal            IDENTIFIER, STRING_LITERAL;        
 
 /*  Non terminals */
-non terminal program, definitions, calls;                   //program, total definitions, total calls (LISTS)                                  //program <- definitions  calls                     
-non terminal definition,rest_definition, call;              //Single definition , single call             
-non terminal def_args;                                      // definition(arguments) def_args 
-non terminal prefixx, prefixx2;                             // prefix condition
-non terminal return_call, return_fcall, return_fcall_args;  //a single call inside return 
-non terminal fcall, fcall_args;                             //calling a function and its arguments
-//non terminal reverse_call;                                  //do reverse (using reverseX()) [! after reduce we dont need it anymore]  
+non terminal program;                                  //goal program
+non terminal definitions;                              //definition list (total definitions)
+non terminal calls;                                    //call list (total calls)                                             
+non terminal definition;                               //start a definition
+non terminal rest_definition;                          //factoring for definition
+non terminal definition_args;                          //arguments that you can pass by in a definition
+non terminal definition_args_rest;                     // definitions args rest
+non terminal definition_expr;                          //core expression of definition
+non terminal definition_functioncall;                  //call a function inside a definition
+non terminal rest_definition_functioncall;             //rest code of calling a function inside a definition
+non terminal definition_functioncall_args;             //and its arguments
+non terminal definition_prefix;                        //apply prefix in a definition
+non terminal call;                                     //core call expr(cannot take identifier)
+non terminal call_functioncall;                        //calling a function 
+non terminal rest_call_functioncall;                   //rest calling a function 
+non terminal call_functioncall_args;                   //and its arguments
+non terminal call_prefix;                              //apply prefix in a call
+non terminal empty;                                    // epsilon
 
 /**
  *  Precedence Declarations
  */
+
 precedence left REVERSE;
 precedence left PREFIX;
 precedence left IF, ELSE;
@@ -84,87 +98,99 @@ definitions ::= definitions:defs definition:def
 ;
 
 //definition can be With Args or Without Args
-definition ::= IDENTIFIER:id LPAREN rest_definition:r1
+definition ::= IDENTIFIER:id LPAREN rest_definition:rd
             {:
-                RESULT = "public static String "+ id+"("+r1;
+                RESULT = "public static String "+ id+"("+rd;
             :}
 ;
 
-rest_definition::= IDENTIFIER:id1 def_args:d_args RPAREN BEGIN return_call:rc END
+rest_definition::= IDENTIFIER:id definition_args:d_args RPAREN_BEGIN definition_expr:de END
             {:
-                //ERROR NEVER COMES HERE
-                RESULT ="String "+ id1 +" "+ d_args+"){\n\t\treturn "+ rc + ";\n}";
+                //ERROR NEVER COMES HERE -> solved
+                RESULT ="String "+ id +" "+ d_args+"){\n\t\treturn "+ de + ";\n}";
             :}
-            | RPAREN BEGIN return_call:rc END
+            | RPAREN_BEGIN definition_expr:de END
             {:
-            //NO ARGS
-                RESULT = "){\n\n\t\treturn " + rc +";\n\t}";
+                
+                RESULT = "){\n\n\t\treturn " + de +";\n\t}";
             :}
 ;
 
-def_args  ::= COMMA IDENTIFIER:id def_args:d_args
+definition_args  ::= COMMA definition_args_rest:dar
             {:
-                RESULT = ", String " + id + d_args;
+                RESULT = ", String " + dar;
             :}  
-            | IDENTIFIER:id
+            | definition_args_rest:dar
             {: 
-                RESULT = "String "+ id; 
+               // RESULT = "String "+ id + d_args;  error id1 id2
+                RESULT = "String "+ dar; 
             :} 
-            | 
+            | empty:e
             {:
-                RESULT = "";
+                RESULT = e;
             :}
 ;
 
-return_call ::=  IF LPAREN prefixx2:pref RPAREN return_call:rc1 ELSE return_call:rc2
+definition_args_rest ::= IDENTIFIER:id definition_args:d_args
         {:
-            RESULT = "((" + pref + ")?" + rc1 +":"+ rc2+")"; // ternary
+            RESULT = id+""+d_args;
         :}
-        | return_call:c1 CONCAT return_call:c2
+;
+definition_expr ::=  IF LPAREN definition_prefix:pref RPAREN definition_expr:de1 ELSE definition_expr:de2
         {:
-            RESULT = c1 + " + " + c2; 
+            RESULT = "((" + pref + ")?" + de1 +":"+ de2+")"; // ternary
         :}
-        | STRING_LITERAL:s1
-        {:
-            RESULT = "\""+ s1 +"\"";
-        :}
-        | REVERSE return_call:rc
+        | REVERSE definition_expr:rc
         {:
             RESULT = "reverseX(" + rc +")";
+        :}
+        | definition_expr:de1 CONCAT definition_expr:de2
+        {:
+            RESULT = de1 + " + " + de2; 
         :}
         | IDENTIFIER:id
         {:
             RESULT = id;
         :}
-        | return_fcall:rf
+        | STRING_LITERAL:str
         {:
-            RESULT = rf;
+            RESULT = "\""+ str +"\"";
         :}
-;
-prefixx2 ::= return_call:rc1 PREFIX return_call:rc2
+        | definition_functioncall:dfc
         {:
-           RESULT = "("+rc2+").startsWith("+rc1+")";
-        :} 
-    
+            RESULT = dfc;
+        :}
+
 ;
 
-return_fcall ::= IDENTIFIER:id LPAREN return_call:rc return_fcall_args:fc_args RPAREN
+definition_prefix ::= definition_expr:de1 PREFIX definition_expr:de2
         {:
-            RESULT = id+"("+rc+fc_args+")";
-        :}
-        |   IDENTIFIER:id LPAREN RPAREN 
+           RESULT = "("+de2+").startsWith("+de1+")";
+        :} 
+;
+
+definition_functioncall ::= IDENTIFIER:id LPAREN rest_definition_functioncall:rdf 
         {:
-        /* no args call*/
-            RESULT = id+"()";
+            RESULT = id +""+ rdf;               
         :}
 ;
-return_fcall_args ::= COMMA return_call:c1 return_fcall_args:fc_args
+rest_definition_functioncall ::= definition_expr:rc definition_functioncall_args:dfc_args RPAREN
+        {:
+            RESULT = "("+rc+dfc_args+")";
+        :}
+        |   RPAREN
+        {:
+        /* no args call*/
+            RESULT = "()";
+        :}
+;
+definition_functioncall_args ::= COMMA definition_expr:c1 definition_functioncall_args:dfc_args
             {: //before every argument must exists a comma
-                RESULT = " , "+ c1 + fc_args;
+                RESULT = " , "+ c1 + dfc_args;
             :}
-            |
-            {: // NO ARGS
-                RESULT = ""; 
+            | empty:e
+            {: // NO ARGS -> EMPTY
+                RESULT = e; 
             :}
 ;
 
@@ -183,7 +209,7 @@ calls  ::= call:cl calls:cls
 ;
 
 //a call can be a ifstatement
-call ::=  IF LPAREN prefixx:pref RPAREN call:c1 ELSE call:c2
+call ::=  IF LPAREN call_prefix:pref RPAREN call:c1 ELSE call:c2
         {:
             RESULT = "((" + pref + ")?" + c1 +":"+ c2+")"; // ternary
         :}
@@ -196,46 +222,55 @@ call ::=  IF LPAREN prefixx:pref RPAREN call:c1 ELSE call:c2
             RESULT = "\""+ s1 +"\"";
         :}
         /*
-        | IDENTIFIER:id
-        {:
-            RESULT = id;    
-        :}
+
+        | IDENTIFIER:id  // calls don't take identifiers
+        {:               // calls don't take identifiers 
+            RESULT = id; // calls don't take identifiers   
+        :}               // calls don't take identifiers
+        
         */
         | REVERSE call:c1
         {:
             RESULT = "reverseX("+c1+")";
         :}
-        | fcall:f
+        | call_functioncall:f
         {:
             RESULT = f;
         :}
 ;
 
-prefixx ::= call:c1 PREFIX call:c2
+call_prefix ::= call:c1 PREFIX call:c2
         {:
            RESULT = "("+c2+").startsWith("+c1+")";
         :} 
     
 ;
 
-fcall ::= IDENTIFIER:id LPAREN call:c1 fcall_args:fc_args RPAREN
+
+call_functioncall ::= IDENTIFIER:id LPAREN rest_call_functioncall:rcf
+                {:
+                        RESULT = id + "" +rcf;
+                :}
+;
+
+rest_call_functioncall ::=  call:c1 call_functioncall_args:fc_args RPAREN
         {:
-            RESULT = id+"("+c1+fc_args+")";
+            RESULT = "("+c1+fc_args+")";
         :}
-        |   IDENTIFIER:id LPAREN RPAREN 
+        |   RPAREN
         {:
         /* no args call*/
-            RESULT = id+"()";
+            RESULT = "()";
         :}
 ;
 
-fcall_args ::= COMMA call:c1 fcall_args:fc_args
+call_functioncall_args ::= COMMA call:c1 call_functioncall_args:fc_args
             {: //before every argument must exists a comma
                 RESULT = " , "+ c1 + fc_args;
             :}
-            |
-            {: // NO ARGS
-                RESULT = ""; 
+            | empty:e
+            {:  
+                RESULT = e; 
             :}
 ;
 
@@ -244,9 +279,16 @@ fcall_args ::= COMMA call:c1 fcall_args:fc_args
 // Helping //
 //---------//
 
-//reverse_call ::= REVERSE
-//            {:
-//                RESULT = "reverseX(";
-//            :}
-//;
-// reduced
+/*reverse_call ::= REVERSE
+            {:
+                RESULT = "reverseX(";
+            :}
+;
+ reduced*/
+
+
+ empty ::= /* epsilon */
+        {:
+            RESULT = "";
+        :}
+ ;

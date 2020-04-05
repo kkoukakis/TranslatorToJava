@@ -73,8 +73,8 @@ else    = "else"
 reverse = "reverse"
 prefix  = "prefix"
 
-//rparen_begin= (")"{WhiteSpace}*"{") //question @42 piazza ?
-
+rparen_begin= (")"{WhiteSpace}*"{") //question @42 piazza ?
+//no_args= ("("{WhiteSpace}*")")
 %state STRING
 
 %%
@@ -85,9 +85,10 @@ prefix  = "prefix"
  "+"              { return symbol(sym.CONCAT);  }
  "("              { return symbol(sym.LPAREN);  }
  ")"              { return symbol(sym.RPAREN);  }
- "{"              { return symbol(sym.BEGIN);  }
+ //"{"            { return symbol(sym.BEGIN);  }
  "}"              { return symbol(sym.END);  }
-//{rparen_begin}    { return symbol(sym.RPAREN_BEGIN);} 
+ {rparen_begin}   { return symbol(sym.RPAREN_BEGIN);} 
+ //{no_args}      { return symbol(sym.NO_ARGS);} 
  ","              { return symbol(sym.COMMA); }
 //functions
 {reverse}         {return symbol(sym.REVERSE);}

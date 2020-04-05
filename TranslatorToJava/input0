@@ -1,10 +1,7 @@
-repeat(x,y){
-    if("y" prefix "y")
-    reverse "y"
-    else
-    reverse "x"
+repeat(x){
+    x
 }
 
   
 
-    repeat("yes", "y" + "y"+ reverse "test")
+    repeat(if ("F" prefix "Fox") "cool" else "error" + if ("B" prefix "Bear") "nice" else "not nice")
