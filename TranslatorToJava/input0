@@ -1,0 +1,10 @@
+repeat(x,y){
+    if("y" prefix "y")
+    reverse "y"
+    else
+    reverse "x"
+}
+
+  
+
+    repeat("yes", "y" + "y"+ reverse "test")

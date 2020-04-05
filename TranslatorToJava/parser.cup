@@ -22,89 +22,231 @@ scan with {: return s.next_token(); :};
  */
 
 /* Terminals (tokens returned by the scanner). */
-terminal            COMMA, LPAREN, RPAREN, BEGIN, END , RPAREN_BEGIN;
+terminal            COMMA, LPAREN, RPAREN, BEGIN, END /*, RPAREN_BEGIN*/;//hack
 terminal            CONCAT, REVERSE, PREFIX;
 terminal            IF, ELSE;
-terminal            IDENTIFIER, STRING_LITERAL;        
+terminal String     IDENTIFIER, STRING_LITERAL;        
 
 /*  Non terminals */
-non terminal program;
-non terminal epsilon; // Helpers 
-non terminal fdef, fdeflist, fdefargs;                       //function definition ,function definition list , function definition arguments
-non terminal expr, exprlist, exprconcat;                     // expression , expression list, and expression then concat
-non terminal fcall, fcallargs, fcallconcat, fcallargsconcat; //function calls and function call arguments
-non terminal cond , condconcat;                              //condition and condition then concat
+non terminal program, definitions, calls;                   //program, total definitions, total calls (LISTS)                                  //program <- definitions  calls                     
+non terminal definition,rest_definition, call;              //Single definition , single call             
+non terminal def_args;                                      // definition(arguments) def_args 
+non terminal prefixx, prefixx2;                             // prefix condition
+non terminal return_call, return_fcall, return_fcall_args;  //a single call inside return 
+non terminal fcall, fcall_args;                             //calling a function and its arguments
+//non terminal reverse_call;                                  //do reverse (using reverseX()) [! after reduce we dont need it anymore]  
 
 /**
  *  Precedence Declarations
  */
-precedence left PREFIX, REVERSE;
+precedence left REVERSE;
+precedence left PREFIX;
 precedence left IF, ELSE;
 precedence left CONCAT;
 
 /**
  *  The Grammar Rules
  */
-//start with program;
 
-program     ::= fdeflist:fdl exprlist:el                          {: System.out.println("import java.util.*;\n\npublic class Main {public static void main(String[] args) {\n " + el + " \n}\n" + fdl + "}"); :}
-;
+start with program;
 
-fdeflist    ::= fdeflist:fdl fdef:fd                              {: RESULT = fdl + "\n" + fd; :}
-                |   fdef:fd                                       {: RESULT = "\n" + fd; :}
-;
-
-
-fdef      ::= IDENTIFIER:id LPAREN IDENTIFIER:id2 fdefargs:fda RPAREN_BEGIN exprconcat:ep END   {: if(fda!=null){RESULT = "\tpublic static String "+id+"(String "+id2 + fda+") {\n\t\treturn "+ep+";\n\t}";} :}
-            |   IDENTIFIER:id LPAREN RPAREN_BEGIN exprconcat:ep END                             {: RESULT = "\tpublic static String "+id+"() {\n\t\treturn "+ep+";\n\t}"; :}
-;
-
-fdefargs         ::=  epsilon                              {: RESULT = ""; :}        
-                 | COMMA IDENTIFIER:id fdefargs:fda        {: RESULT = ", String " + id + fda; :}     
-;
-
-exprlist       ::= expr:e exprlist:el                                    {: RESULT = "\t\tSystem.out.println(" + e + ");\n" + el; :}
-                |   expr:e                                               {: RESULT = "\t\tSystem.out.println(" + e + ");"; :}
-;
-
-expr          ::= IF LPAREN cond:c RPAREN expr:e1 ELSE expr:e2           {: RESULT = "(("+c+")?"+e1+":"+e2+")";:}
-                |   expr:e1 CONCAT expr:e2                               {: RESULT = e1 + " + " + e2; :}
-                |   REVERSE expr:e1                                      {: RESULT = e1 +".reverse()"; :}
-                |   STRING_LITERAL:sl                                    {: RESULT = "\"" + sl + "\""; :}
-                |   fcall:fc                                             {: RESULT = fc; :}
-;
-
-//manage arguments like in function definition
-fcall         ::= IDENTIFIER:id LPAREN expr:e fcallargs:fca RPAREN       {: RESULT = id + "(" + e + fca + ")"; :}
-                |   IDENTIFIER:id LPAREN RPAREN                          {: RESULT = id + "()"; :}
-;
-
-fcallargs     ::= COMMA expr:e fcallargs:fca                             {: RESULT = ", " + e + fca; :}
-                |  epsilon                                                      {: RESULT = ""; :}
-;
-
-cond            ::= expr:e1 PREFIX expr:e2                               {: RESULT = "("+e2+").startsWith("+e1+")"; :}
+// program  <-- definitions calls   
+program     ::=  definitions:defs calls:cls              
+            {:  // import java.util.* for stringBuffer and .reverse()
+                System.out.println("import java.util.*;\n\n");
+                System.out.println("public class Output {");
                  
-;
-
-exprconcat       ::= IF LPAREN condconcat:c RPAREN exprconcat:e1 ELSE exprconcat:e2  {: RESULT = "(("+c+")?"+e1+":"+e2+")"; :}
-                |   exprconcat:e1 CONCAT exprconcat:e2                               {: RESULT = e1 + " + " + e2; :}
-                |   STRING_LITERAL:sl                                                {: RESULT = "\"" + sl + "\""; :}
-                |   IDENTIFIER:id                                                    {: RESULT = id; :}
-                |   fcallconcat:fc                                                   {: RESULT = fc; :}
-;
-
-fcallconcat   ::= IDENTIFIER:id LPAREN exprconcat:e fcallargsconcat:fca RPAREN        {: RESULT = id + "(" + e + fca + ")"; :} 
-                |   IDENTIFIER:id LPAREN RPAREN                                       {: RESULT = id + "()"; :}
-;
-
-fcallargsconcat    ::= COMMA exprconcat:e fcallargsconcat:fca             {: RESULT = "," + e + fca; :}
-                    | epsilon                                             {: RESULT = ""; :}
-;
-
-condconcat       ::= exprconcat:e1 PREFIX exprconcat:e2                   {: RESULT = "("+e2+").startsWith("+e1+")"; :}
+                //reverseX() function 
+                System.out.println("\t//Reverse()"+"\n\tpublic static String reverseX(String str){");
+                System.out.println("\n\t\tStringBuilder sb=new StringBuilder(str); \n\t\tsb.reverse(); \n\t\treturn sb.toString(); \n\t}");
                  
+                //Main starts here
+                System.out.println("\n\tpublic static void main(String[] args) {");
+                 
+                //inside main there are calls
+                System.out.println( "\t//CALLS" + cls + " \n\t}\n"); // calls
+                 
+                //outside main there are definitions
+                System.out.println( "\n\t//DEFINITIONS" + defs + "\n}");  // definitions
+            :}
 ;
 
-epsilon ::=  //epsilon                                {: RESULT = ""; :}
+//definitions <-- definitions definition
+//as many definitions we want | 1 definition or last definition   
+definitions ::= definitions:defs definition:def 
+            {:
+                RESULT = defs + "\n\t" + def;
+            :}
+            | definition:def                                            
+            {:
+                RESULT = "\n\t" + def;          
+            :}
 ;
+
+//definition can be With Args or Without Args
+definition ::= IDENTIFIER:id LPAREN rest_definition:r1
+            {:
+                RESULT = "public static String "+ id+"("+r1;
+            :}
+;
+
+rest_definition::= IDENTIFIER:id1 def_args:d_args RPAREN BEGIN return_call:rc END
+            {:
+                //ERROR NEVER COMES HERE
+                RESULT ="String "+ id1 +" "+ d_args+"){\n\t\treturn "+ rc + ";\n}";
+            :}
+            | RPAREN BEGIN return_call:rc END
+            {:
+            //NO ARGS
+                RESULT = "){\n\n\t\treturn " + rc +";\n\t}";
+            :}
+;
+
+def_args  ::= COMMA IDENTIFIER:id def_args:d_args
+            {:
+                RESULT = ", String " + id + d_args;
+            :}  
+            | IDENTIFIER:id
+            {: 
+                RESULT = "String "+ id; 
+            :} 
+            | 
+            {:
+                RESULT = "";
+            :}
+;
+
+return_call ::=  IF LPAREN prefixx2:pref RPAREN return_call:rc1 ELSE return_call:rc2
+        {:
+            RESULT = "((" + pref + ")?" + rc1 +":"+ rc2+")"; // ternary
+        :}
+        | return_call:c1 CONCAT return_call:c2
+        {:
+            RESULT = c1 + " + " + c2; 
+        :}
+        | STRING_LITERAL:s1
+        {:
+            RESULT = "\""+ s1 +"\"";
+        :}
+        | REVERSE return_call:rc
+        {:
+            RESULT = "reverseX(" + rc +")";
+        :}
+        | IDENTIFIER:id
+        {:
+            RESULT = id;
+        :}
+        | return_fcall:rf
+        {:
+            RESULT = rf;
+        :}
+;
+prefixx2 ::= return_call:rc1 PREFIX return_call:rc2
+        {:
+           RESULT = "("+rc2+").startsWith("+rc1+")";
+        :} 
+    
+;
+
+return_fcall ::= IDENTIFIER:id LPAREN return_call:rc return_fcall_args:fc_args RPAREN
+        {:
+            RESULT = id+"("+rc+fc_args+")";
+        :}
+        |   IDENTIFIER:id LPAREN RPAREN 
+        {:
+        /* no args call*/
+            RESULT = id+"()";
+        :}
+;
+return_fcall_args ::= COMMA return_call:c1 return_fcall_args:fc_args
+            {: //before every argument must exists a comma
+                RESULT = " , "+ c1 + fc_args;
+            :}
+            |
+            {: // NO ARGS
+                RESULT = ""; 
+            :}
+;
+
+
+//-------//
+// CALLS //
+//-------//
+calls  ::= call:cl calls:cls
+        {:
+            RESULT = "\n\t\tSystem.out.println(" + cl + ");" + cls;
+        :}
+        | call:cl
+        {:
+            RESULT = "\n\t\tSystem.out.println(" + cl + ");";
+        :}
+;
+
+//a call can be a ifstatement
+call ::=  IF LPAREN prefixx:pref RPAREN call:c1 ELSE call:c2
+        {:
+            RESULT = "((" + pref + ")?" + c1 +":"+ c2+")"; // ternary
+        :}
+        | call:c1 CONCAT call:c2
+        {:
+            RESULT = c1 + " + " + c2; 
+        :}
+        | STRING_LITERAL:s1
+        {:
+            RESULT = "\""+ s1 +"\"";
+        :}
+        /*
+        | IDENTIFIER:id
+        {:
+            RESULT = id;    
+        :}
+        */
+        | REVERSE call:c1
+        {:
+            RESULT = "reverseX("+c1+")";
+        :}
+        | fcall:f
+        {:
+            RESULT = f;
+        :}
+;
+
+prefixx ::= call:c1 PREFIX call:c2
+        {:
+           RESULT = "("+c2+").startsWith("+c1+")";
+        :} 
+    
+;
+
+fcall ::= IDENTIFIER:id LPAREN call:c1 fcall_args:fc_args RPAREN
+        {:
+            RESULT = id+"("+c1+fc_args+")";
+        :}
+        |   IDENTIFIER:id LPAREN RPAREN 
+        {:
+        /* no args call*/
+            RESULT = id+"()";
+        :}
+;
+
+fcall_args ::= COMMA call:c1 fcall_args:fc_args
+            {: //before every argument must exists a comma
+                RESULT = " , "+ c1 + fc_args;
+            :}
+            |
+            {: // NO ARGS
+                RESULT = ""; 
+            :}
+;
+
+
+//---------// 
+// Helping //
+//---------//
+
+//reverse_call ::= REVERSE
+//            {:
+//                RESULT = "reverseX(";
+//            :}
+//;
+// reduced

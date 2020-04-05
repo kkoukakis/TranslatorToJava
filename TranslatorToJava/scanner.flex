@@ -65,14 +65,15 @@ WhiteSpace     = {LineTerminator} | [ \t\f]
 
 
 /* Identifiers must start with (_ or a-zA-Z)  */
+
 Identifier = [_a-zA-Z][_a-zA-Z0-9]*
 
-if      = if     
-else    = else   
-reverse = reverse
-prefix  = prefix 
+if      = "if"    
+else    = "else"  
+reverse = "reverse"
+prefix  = "prefix"
 
-rparen_begin= (")"{WhiteSpace}*"{") //question @42 piazza ?
+//rparen_begin= (")"{WhiteSpace}*"{") //question @42 piazza ?
 
 %state STRING
 
@@ -86,7 +87,7 @@ rparen_begin= (")"{WhiteSpace}*"{") //question @42 piazza ?
  ")"              { return symbol(sym.RPAREN);  }
  "{"              { return symbol(sym.BEGIN);  }
  "}"              { return symbol(sym.END);  }
-{rparen_begin}    { return symbol(sym.RPAREN_BEGIN);} 
+//{rparen_begin}    { return symbol(sym.RPAREN_BEGIN);} 
  ","              { return symbol(sym.COMMA); }
 //functions
 {reverse}         {return symbol(sym.REVERSE);}
