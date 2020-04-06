@@ -51,6 +51,8 @@ non terminal empty;                                    // epsilon
 non terminal operators;                                //operators -> prefix
 non terminal reverseX_call;                            //reverseX for calls
 non terminal reverseX_def;                             //reverseX for definitions
+non terminal concat_call;                              //concat for calls                                         
+non terminal concat_def;                               //concat for defs                
 non terminal string;                                   //STRING_LITERAL
 
 /**
@@ -148,9 +150,9 @@ definition_expr ::=  IF LPAREN definition_condition:cond RPAREN definition_expr:
         {:
             RESULT = rv+")";
         :}
-        | definition_expr:de1 CONCAT definition_expr:de2
+        | concat_def:cd
         {:
-            RESULT = de1 + " + " + de2; 
+            RESULT = cd;
         :}
         | IDENTIFIER:id
         {:
@@ -218,9 +220,9 @@ call ::=  IF LPAREN call_condition:cond RPAREN call:c1 ELSE call:c2
         {:
             RESULT = "((" + cond + ")?" + c1 +":"+ c2+")"; // ternary
         :}
-        | call:c1 CONCAT call:c2
+        | concat_call:cc
         {:
-            RESULT = c1 + " + " + c2; 
+            RESULT = cc; 
         :}
         | string:str
         {:
@@ -288,7 +290,7 @@ empty ::= /* epsilon */
         :}
  ;
 
- operators ::= PREFIX
+operators ::= PREFIX
         {:
             RESULT = "startsWith";
         :}
@@ -310,3 +312,15 @@ reverseX_def ::= REVERSE definition_expr:rc
             RESULT = "reverseX(" + rc;
         :}
  ;
+
+concat_def ::=  definition_expr:de1 CONCAT definition_expr:de2
+        {:
+            RESULT = de1 + " + " + de2; 
+        :}
+;
+
+concat_call ::=  call:c1 CONCAT call:c2
+        {:
+            RESULT = c1 + " + " + c2; 
+        :}
+;

@@ -22,11 +22,10 @@
 ## Grammar
 
    program →  definitions calls
-
    //DEFINITIONS
-	
+   
    definitions → definitions definition
-   	         | definition
+   	          | definition
 
    definition → ID ( rest_definition
 
@@ -35,24 +34,24 @@
 
    definition_args → , definition_args_rest
    		          | definition_args_rest
-    
+
    definition_args_rest → ID definition_args
    
-   definition_expr → IF ( definition_prefix ) definition_expr ELSE definition_expr
-   		          | REVERSE definition_expr
-   		          | definition_expr + definition exp
+   definition_expr → IF ( definition_condition ) definition_expr ELSE  definition_expr
+   		          | reverseX_def
+   		          | concat_def
    		          | ID
-   		          |STRING_LITERAL
+   		          | string
    		          | definition_functioncall
 
-   definition_prefix → definition_expr PREFIX definition_expr
+   definition_condition → definition_expr operators definition_expr
 
    definition_functioncall → ID ( rest_definition_functioncall
 
-   rest_definition_functioncall → definition_expr definition_functioncall_args )
+   rest_definition_functioncall → definition_expr  definition_functioncall_args )
    				                 |   ) 
 
-   definition_functioncall_args → , definition_expr definition_functioncall_args
+   definition_functioncall_args → , definition_expr   definition_functioncall_args
    				                 | empty
    
    //CALLS
@@ -60,13 +59,13 @@
    calls → call calls
    	   | call 
 
-   call →   IF ( call_prefix  ) call ELSE call
-             	| call + call
-             	| STRING_LITERAL
-   	         | REVERSE call
-   	         | call_functioncall
+   call →   IF ( call_condition  ) call ELSE call
+        | concat_call
+        | string
+   	  | reverseX_call
+   	  | call_functioncall
 
-   call_prefix → call PREFIX call
+   call_condition → call operators call
 
    call_functioncall → ID ( rest_call_functioncall
 
@@ -75,10 +74,23 @@
    call_functioncall_args → , call call_functioncall_args
    			              | empty
 
+
+
+   //HELPERS
+
    empty → ε               //epsilon
 
+   string → STRING_LITERAL
 
+   reverseX_call → REVERSE call
 
+   reverseX_def→ REVERSE definition_expr
+
+   concat_def → definition_expr + definition_expr 
+
+   concat_call → call + call
+
+   operators → PREFIX
 
 
 -What about REVERSE?
